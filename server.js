@@ -1,45 +1,47 @@
 'use strict';
 
 var express = require('express');
-var jsdom   = require('jsdom');
-var request = require('superagent');
+
+var getPlace = require('./app/getPlace.js');
 
 var server = express();
 var PORT = process.env.PORT || 9000;
 
 
-server.get('/scrape', function(req, res) {
-  var url = req.query.url;
-  console.log("Scraping URL: %s", url);
+server.get('/getPlace', function(req, res) {
 
-  request
-    .get(url, function(err, page) {
-      if (err) {
-        throw err;
-      }
-      jsdom.env(
-        page.text,
-        ["http://code.jquery.com/jquery.js"],
-        function (err, window) {
-          var $ = window.$;
+  getPlace(req.query.url)
+    .then(function(place) {
+      res.send(place);
+    })
+    .catch(function(err) {
+      console.error(err);
+    });
 
-          var places = [];
+});
 
-          $("*").each(function() {
-            var $t = $(this);
-            var cl = $t.attr('class');
-            var $sib;
-            if (cl && cl.indexOf('address') > -1) {
-              $sib = $t.siblings('h1,h2,h3,h4');
-              places.push({
-                title: $sib.text(),
-                address: $t.text()
-              });
-            }
-          });
-          res.send(places);
-        }
-      );
+server.get('/testGetPlace', function(req, res) {
+  var tests = [
+     'http://www.agoda.com/the-opposite-house-hotel/hotel/beijing-cn.html'
+    ,'http://www.booking.com/hotel/cn/the-opposite-house.html'
+    ,'https://citymaps.com/v/cn/be/beijing/%E7%91%9C%E8%88%8D-the-opposite-house/c0fd07c0-dcff-415b-83ec-2fe9a818b5e0'
+    ,'http://www.expedia.com/Beijing-Hotels-The-Opposite-House.h2191786.Hotel-Information'
+    ,'http://www.hotelclub.com/pt_pt/hot%C3%A9is/China/Pequim/The_Opposite_House.h287182/'
+    ,'http://www.hotels.com/hotel/details.html?hotel-id=274069'
+    ,'http://www.hoteltravel.com/china/beijing/opposite_house.htm'
+    ,'http://www.orbitz.com/hotel/China/Beijing/The_Opposite_House.h287182/'
+    ,'http://www.preferredhotels.com/destinations/beijing/the-opposite-house'
+    ,'http://www.priceline.com/hotel/hotelOverviewGuide.do?propID=11097705'
+    ,'http://www.tablethotels.com/The-Opposite-House-Beijing-Hotel/Beijing-Hotels-China/103877/'
+    ,'http://www.tripadvisor.com/Hotel_Review-g294212-d1144145-Reviews-The_Opposite_House-Beijing.html'
+    ,'http://www.travelocity.com/Beijing-Hotels-Rosewood-Beijing.h1514763.Hotel-Information?rm1=a2&sp=KygIKjE7PWVuYGh2aWt-KygbMDMRNmV-KygIKjE7PRsXZWpubnZvan4rKBswMxctLGU.&'
+  ];
+  var promises = tests.map(function(test) {
+    return getPlace(test);
+  });
+  Promise.all(promises)
+    .then(function(results) {
+      res.send(results);
     });
 });
 
