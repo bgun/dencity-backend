@@ -109,6 +109,16 @@ module.exports = function getPlaces(web_url) {
           }
         });
 
+        // opengraph
+        $('meta[property$=":location:latitude"]').each(function() {
+          lat = $(this).attr('content');
+          latlon_method = "opengraph";
+        });
+        $('meta[property$=":location:longitude"]').each(function() {
+          lon = $(this).attr('content');
+          latlon_method = "opengraph";
+        });
+
         // last resort: let's go hunting
         if (!address) {
           address = "";
