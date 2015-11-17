@@ -1,14 +1,11 @@
 'use strict';
 
+var fs      = require('fs');
 var url     = require('url');
 var jsdom   = require('jsdom');
-var request = require('superagent');
+var qs      = require('qs');
 
-var isAddress = function(str) {
-};
-
-var hasAddress = function(str) {
-};
+var jquery = fs.readFileSync("./jquery-2.1.4.min.js", "utf-8");
 
 module.exports = function getPlaces(web_url) {
   return new Promise(function(resolve, reject) {
@@ -18,29 +15,19 @@ module.exports = function getPlaces(web_url) {
 
     jsdom.env({
       url: web_url,
-      scripts: ["http://code.jquery.com/jquery.js"],
+      src: jquery,
       done: function (err, window) {
         var $ = window.$;
         console.log('Fetching from: %s', host);
 
-        $.expr[':'].regex = function(elem, index, match) {
-          var matchParams = match[3].split(','),
-            validLabels = /^(data|css):/,
-            attr = {
-              method: matchParams[0].match(validLabels) ?
-                matchParams[0].split(':')[0] : 'attr',
-              property: matchParams.shift().replace(validLabels,'')
-            },
-            regexFlags = 'ig',
-            regex = new RegExp(matchParams.join('').replace(/^s+|s+$/g,''), regexFlags);
-          return regex.test($(elem)[attr.method](attr.property));
-        };
-
-        var name = '';
-        var address = '';
-        var address_method = '';
-        var lat;
-        var lon;
+        let result = {};
+        let name = '';
+        let address = '';
+        let address_method = '';
+        let addr = [];
+        let lat;
+        let lon;
+        let latlon_method;
 
         var $h1 = $("h1");
         switch($h1.length) {
@@ -63,36 +50,48 @@ module.exports = function getPlaces(web_url) {
         var $p2 = $p1.parent();
         var $p3 = $p2.parent();
 
-        $p2.find('*').filter(function() {
-          return this.className.match(/address/);
-        }).first().each(function() {
-          address = $(this).text();
-          address_method = 'carat';
+        // Parse links to Google Maps which contain lat/lon
+        $('*').each(function() {
+          var $t = $(this);
+          var href, href_parsed, query, ll;
+          if ($t.attr('href')) {
+            href = $t.attr('href');
+          } else if($t.attr('src')) {
+            href = $t.attr('src');
+          } else if($t.attr('data-src')) {
+            href = $t.attr('data-src');
+          }
+          if (href && href.indexOf('maps.google') > -1) {
+            href_parsed = url.parse(href);
+            query = qs.parse(href_parsed.query);
+            console.log(host+" | "+href);
+            if (query.center) {
+              ll = query.center.split(',');
+              lat = ll[0];
+              lon = ll[1];
+              latlon_method = "map link";
+            }
+          }
         });
-        if (!address) {
-          $p2.find('address').each(function() {
-            address = $(this).text();
-            address_method = 'tag';
-          });
-        }
-        if (!address) {
-          address = $('body').find('[class^=address]').text();
-          address_method = 'global class';
-        }
-        if (!address) {
-          address = $('body').find('[class^=location]').text();
-          address_method = 'global location class';
-        }
 
-        $('*[itemprop="address"]').each(function() {
-          var addr = [];
-          $(this).children().each(function() {
-            addr.push( $(this).attr('content') || $(this).text() );
-          });
+        // Microformats
+        $('*[itemprop="address"]').find('*').each(function() {
+          if ($(this).attr('itemprop')) {
+            addr.push($(this).attr('content') || $(this).text());
+          }
           address = addr.join(' ').trim();
           address_method = 'schema';
         });
+        $('*[itemprop="latitude"]').each(function() {
+          lat = $(this).attr('content') || $(this).text();
+          latlon_method = "schema";
+        });
+        $('*[itemprop="longitude"]').each(function() {
+          lon = $(this).attr('content') || $(this).text();
+          latlon_method = "schema";
+        });
 
+        // JSON-LD - unlikely but awesome if they have it
         $('script[type="application/ld+json"]').each(function() {
           var ld = JSON.parse($(this).text());
           if (ld.address) {
@@ -101,29 +100,51 @@ module.exports = function getPlaces(web_url) {
               ld.address.addressRegion,
               ld.address.addressLocality
             ].join(' ').trim();
+            address_method = 'ld+json';
           }
           if (ld.geo) {
             lat = ld.geo.latitude;
             lon = ld.geo.longitude;
+            latlon_method = "ld+json";
           }
-          address_method = 'ld+json';
         });
 
-        $('*[itemprop="latitude"]').each(function() {
-          lat = $(this).attr('content');
-        });
-        $('*[itemprop="longitude"]').each(function() {
-          lon = $(this).attr('content');
-        });
+        // last resort: let's go hunting
+        if (!address) {
+          address = "";
+          $p2.find('*').each(function() {
+            if ($(this).attr('class') && $(this).attr('class').match(/address/i)) {
+              address += $(this).text();
+              address_method = 'match class: '+$(this).attr('class');
+            }
+          });
+        }
+        if (!address) {
+          address = "";
+          $p2.find('*').each(function() {
+            if ($(this).attr('id') && $(this).attr('id').match(/address/i)) {
+              address += $(this).text();
+              address_method = 'match id: '+$(this).attr('id');
+            }
+          });
+        }
+        if (!address) {
+          address = "";
+          $p3.find('address').each(function() {
+            address += $(this).text();
+            address_method = 'tag';
+          });
+        }
 
-        var result = {
+        result = {
           name    : name.trim(),
           address : address,
           host    : host,
           lat     : lat,
           lon     : lon,
           // test
-          address_method: address_method
+          address_method : address_method,
+          latlon_method  : latlon_method
         };
         resolve(result);
       }
