@@ -84,32 +84,48 @@ module.exports = function getPlaces(web_url) {
           address_method = 'global location class';
         }
 
-        $('meta[itemprop="address"]').each(function() {
+        $('*[itemprop="address"]').each(function() {
           var addr = [];
           $(this).children().each(function() {
-            addr.push($(this).attr('content'));
+            addr.push( $(this).attr('content') || $(this).text() );
           });
-          address = addr;
+          address = addr.join(' ').trim();
           address_method = 'schema';
         });
-        $('meta[itemprop="latitude"]').each(function() {
+
+        $('script[type="application/ld+json"]').each(function() {
+          var ld = JSON.parse($(this).text());
+          if (ld.address) {
+            address = [
+              ld.address.streetAddress,
+              ld.address.addressRegion,
+              ld.address.addressLocality
+            ].join(' ').trim();
+          }
+          if (ld.geo) {
+            lat = ld.geo.latitude;
+            lon = ld.geo.longitude;
+          }
+          address_method = 'ld+json';
+        });
+
+        $('*[itemprop="latitude"]').each(function() {
           lat = $(this).attr('content');
         });
-        $('meta[itemprop="longitude"]').each(function() {
+        $('*[itemprop="longitude"]').each(function() {
           lon = $(this).attr('content');
         });
 
-
-
-        resolve({
+        var result = {
           name    : name.trim(),
-          address : address.trim(),
+          address : address,
           host    : host,
           lat     : lat,
           lon     : lon,
           // test
           address_method: address_method
-        });
+        };
+        resolve(result);
       }
     }); // end jsdom.env
   }); // end promise
