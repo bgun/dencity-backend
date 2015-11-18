@@ -5,7 +5,7 @@ var url     = require('url');
 var jsdom   = require('jsdom');
 var qs      = require('qs');
 
-var jquery = fs.readFileSync("./jquery-2.1.4.min.js", "utf-8");
+var jquery = fs.readFileSync("./node_modules/jquery/dist/jquery.js", "utf-8");
 
 module.exports = function getPlaces(web_url) {
   return new Promise(function(resolve, reject) {
@@ -152,9 +152,10 @@ module.exports = function getPlaces(web_url) {
           host    : host,
           lat     : lat,
           lon     : lon,
-          // test
-          address_method : address_method,
-          latlon_method  : latlon_method
+          meta: {
+            address_method : address_method,
+            latlon_method  : latlon_method
+          }
         };
         resolve(result);
       }

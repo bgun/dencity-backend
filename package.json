@@ -12,6 +12,7 @@
   "dependencies": {
     "babel-core": "^6.1.21",
     "express": "^4.13.3",
+    "jquery": "^2.1.4",
     "jsdom": "^7.0.2",
     "qs": "^6.0.0",
     "scraper": "0.0.9",
