@@ -10,3 +10,15 @@ Example:
 
 Params:
  + `url`: The URL to scrape.
+
+Todo:
+ + Title from schema, jsonld, open graph 
+ + Address from Google maps daddr
+ + Walk DOM and calculate best geonames match
+
+Test:
+ + Google places 
+ + Pinterest
+ + Facebook page
+ + Google+ page
+ + Bing
