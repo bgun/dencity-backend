@@ -36,7 +36,11 @@ server.get('/testGetPlace', function(req, res) {
     ,'http://www.tripadvisor.com/Hotel_Review-g294212-d1144145-Reviews-The_Opposite_House-Beijing.html'
     ,'http://www.travelocity.com/Beijing-Hotels-Rosewood-Beijing.h1514763.Hotel-Information?rm1=a2&sp=KygIKjE7PWVuYGh2aWt-KygbMDMRNmV-KygIKjE7PRsXZWpubnZvan4rKBswMxctLGU.&'
     ,'http://www.yelp.com/biz/babbo-new-york'
+    ,'https://foursquare.com/v/%E7%91%9C%E8%88%8D-the-opposite-house/4b290c37f964a520c69724e3'
     ,'https://en.wikipedia.org/wiki/Amsterdam'
+    ,'https://plus.google.com/+BabboRistorante/about'
+    ,'https://www.facebook.com/BabboRistorante/'
+    ,'https://www.pinterest.com/pin/156148312054016368/'
   ];
   var promises = tests.map(function(test) {
     return getPlace(test);

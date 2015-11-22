@@ -22,28 +22,30 @@ module.exports = function getPlaces(web_url) {
 
         let result = {};
         let name = '';
+        let name_method = [];
         let address = '';
-        let address_method = '';
+        let address_method = [];
         let addr = [];
         let lat;
         let lon;
-        let latlon_method;
+        let latlon_method = [];
+
+
+        $('*[itemtype="http://schema.org/Place"],*[itemtype="http://schema.org/Hotel"]')
+          .find('*[itemprop="name"]').each(function() {
+            name = $(this).attr('content') || $(this).text();
+            name_method.push('schema: '+$(this).attr('itemprop'));
+          });
+
 
         var $h1 = $("h1");
-        switch($h1.length) {
-          case 0:
-            name = "no h1 tag";
-          case 1:
-            $h1 = $h1.first();
-            break;
-          default:
-            $h1 = $h1.last();
-        }
-
-        if ($h1.children().length > 1) {
-          name = $h1.children().first().text();
-        } else {
-          name = $h1.first().text();
+        if (!name) {
+          if ($h1.children().length > 1) {
+            name = $h1.children().first().text();
+          } else {
+            name = $h1.first().text();
+          }
+          name_method.push('h1');
         }
 
         var $p1 = $h1.parent();
@@ -69,7 +71,7 @@ module.exports = function getPlaces(web_url) {
               ll = query.center.split(',');
               lat = ll[0];
               lon = ll[1];
-              latlon_method = "map link";
+              latlon_method.push("map link");
             }
           }
         });
@@ -80,15 +82,15 @@ module.exports = function getPlaces(web_url) {
             addr.push($(this).attr('content') || $(this).text());
           }
           address = addr.join(' ').trim();
-          address_method = 'schema';
+          address_method.push('schema');
         });
         $('*[itemprop="latitude"]').each(function() {
           lat = $(this).attr('content') || $(this).text();
-          latlon_method = "schema";
+          latlon_method.push("schema");
         });
         $('*[itemprop="longitude"]').each(function() {
           lon = $(this).attr('content') || $(this).text();
-          latlon_method = "schema";
+          latlon_method.push("schema");
         });
 
         // JSON-LD - unlikely but awesome if they have it
@@ -100,23 +102,23 @@ module.exports = function getPlaces(web_url) {
               ld.address.addressRegion,
               ld.address.addressLocality
             ].join(' ').trim();
-            address_method = 'ld+json';
+            address_method.push('ld+json');
           }
           if (ld.geo) {
             lat = ld.geo.latitude;
             lon = ld.geo.longitude;
-            latlon_method = "ld+json";
+            latlon_method.push("ld+json");
           }
         });
 
         // opengraph
         $('meta[property$=":location:latitude"]').each(function() {
-          lat = $(this).attr('content');
-          latlon_method = "opengraph";
+          lat = $(this).attr('content') || $(this).text();
+          latlon_method.push("opengraph");
         });
         $('meta[property$=":location:longitude"]').each(function() {
-          lon = $(this).attr('content');
-          latlon_method = "opengraph";
+          lon = $(this).attr('content') || $(this).text();
+          latlon_method.push("opengraph");
         });
 
         // last resort: let's go hunting
@@ -125,7 +127,7 @@ module.exports = function getPlaces(web_url) {
           $p2.find('*').each(function() {
             if ($(this).attr('class') && $(this).attr('class').match(/address/i)) {
               address += $(this).text();
-              address_method = 'match class: '+$(this).attr('class');
+              address_method.push('match class: '+$(this).attr('class'));
             }
           });
         }
@@ -134,7 +136,7 @@ module.exports = function getPlaces(web_url) {
           $p2.find('*').each(function() {
             if ($(this).attr('id') && $(this).attr('id').match(/address/i)) {
               address += $(this).text();
-              address_method = 'match id: '+$(this).attr('id');
+              address_method.push('match id: '+$(this).attr('id'));
             }
           });
         }
@@ -142,7 +144,7 @@ module.exports = function getPlaces(web_url) {
           address = "";
           $p3.find('address').each(function() {
             address += $(this).text();
-            address_method = 'tag';
+            address_method.push('tag');
           });
         }
 
@@ -153,6 +155,7 @@ module.exports = function getPlaces(web_url) {
           lat     : lat,
           lon     : lon,
           meta: {
+            name_method    : name_method,
             address_method : address_method,
             latlon_method  : latlon_method
           }
