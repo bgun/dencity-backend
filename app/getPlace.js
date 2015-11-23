@@ -20,7 +20,6 @@ module.exports = function getPlaces(web_url) {
         var $ = window.$;
         console.log('Fetching from: %s', host);
 
-        let result = {};
         let name = '';
         let name_method = [];
         let address = '';
@@ -30,13 +29,16 @@ module.exports = function getPlaces(web_url) {
         let lon;
         let latlon_method = [];
 
+        $('meta[property="og:title"]').each(function() {
+          name = $(this).attr('content');
+          name_method.push('opengraph');
+        });
 
         $('*[itemtype="http://schema.org/Place"],*[itemtype="http://schema.org/Hotel"]')
           .find('*[itemprop="name"]').each(function() {
             name = $(this).attr('content') || $(this).text();
             name_method.push('schema: '+$(this).attr('itemprop'));
           });
-
 
         var $h1 = $("h1");
         if (!name) {
@@ -71,7 +73,13 @@ module.exports = function getPlaces(web_url) {
               ll = query.center.split(',');
               lat = ll[0];
               lon = ll[1];
-              latlon_method.push("map link");
+              latlon_method.push("map link: center");
+            }
+            if (query.daddr) {
+              ll = query.daddr.split(',');
+              lat = ll[0];
+              lon = ll[1];
+              latlon_method.push("map link: daddr");
             }
           }
         });
@@ -148,7 +156,7 @@ module.exports = function getPlaces(web_url) {
           });
         }
 
-        result = {
+        resolve({
           name    : name.trim(),
           address : address,
           host    : host,
@@ -159,8 +167,7 @@ module.exports = function getPlaces(web_url) {
             address_method : address_method,
             latlon_method  : latlon_method
           }
-        };
-        resolve(result);
+        });
       }
     }); // end jsdom.env
   }); // end promise
