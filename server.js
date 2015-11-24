@@ -2,22 +2,33 @@
 
 var express = require('express');
 
-var getPlace = require('./app/getPlace.js');
+var scrapePageForPlace = require('./service/scrapePageForPlace.js');
+var scrapeFsqExplore   = require('./service/scrapeFsqExplore.js');
 
 var server = express();
 var PORT = process.env.PORT || 9099;
 
 
 server.get('/getPlace', function(req, res) {
-
-  getPlace(req.query.url)
+  scrapePageForPlace(req.query.url)
     .then(function(place) {
       res.send(place);
     })
     .catch(function(err) {
       console.error(err);
     });
+});
 
+server.get('/scrapeFsqExplore', function(req, res) {
+  scrapeFsqExplore(req.query)
+    .then(function(places) {
+      res.send({
+        places: places
+      });
+    })
+    .catch(function(err) {
+      console.error(err);
+    });
 });
 
 server.get('/testGetPlace', function(req, res) {
