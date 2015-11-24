@@ -1,4 +1,9 @@
+# don't track osx turds
 .DS_Store
+
 node_modules/
 *.log
 .idea/
+
+# api keys and such
+settings.json
