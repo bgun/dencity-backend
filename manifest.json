@@ -1,0 +1,17 @@
+{
+  "manifest_version": 2,
+  "name": "places scraper",
+  "version": "1",
+  "description": "A plain text description",
+  "icons": {
+    "128": "./images/icon.png"
+  },
+
+  "browser_action": {
+    "default_icon": {
+      "128": "./images/icon.png"
+    },
+    "default_title": "Google Mail",
+    "default_popup": "./popup.html"
+  }
+}
